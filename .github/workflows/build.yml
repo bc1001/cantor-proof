@@ -1,0 +1,44 @@
+name: Build Proof and Export Artifacts
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Lean 4 via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+      - name: Update Dependencies & Generate lake-manifest.json
+        run: lake update
+
+      - name: Fetch Mathlib Cache
+        run: lake exe cache get
+
+      - name: Build Proof (.olean)
+        run: lake build
+
+      - name: Export Plaintext AST (方案 1: 跨平台纯文本证明文件)
+        run: |
+          # 克隆并构建纯文本导出器 lean4export
+          git clone https://github.com/leanprover-community/lean4export.git
+          cd lean4export && lake build && cd ..
+          # 导出低级 AST 语法树至纯文本文件
+          lake env ./lean4export/.lake/build/bin/lean4export StrictFormalConjecture1 > proof_independent.out || true
+
+      - name: Upload All Proof Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-artifacts
+          path: |
+            lake-manifest.json
+            proof_independent.out
+            .lake/build/lib/
