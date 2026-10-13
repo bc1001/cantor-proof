@@ -28,9 +28,14 @@ jobs:
 
       - name: "Export Plaintext AST (Scheme 1)"
         run: |
-          git clone https://github.com/leanprover-community/lean4export.git
-          cd lean4export && lake build && cd ..
-          lake env ./lean4export/.lake/build/bin/lean4export StrictFormalConjecture1 > proof_independent.out || true
+          # 修正为官方正版仓库 leanprover/lean4export
+          git clone https://github.com/leanprover/lean4export.git
+          cd lean4export
+          # 保证导出器与你的 v4.35.0-rc4 工具链完全一致
+          cp ../lean-toolchain . || true
+          lake build
+          cd ..
+          lake env ./lean4export/.lake/build/bin/lean4export StrictFormalConjecture1 > proof_independent.out
 
       - name: Upload All Proof Artifacts
         uses: actions/upload-artifact@v4
