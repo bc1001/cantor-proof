@@ -17,7 +17,7 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
-      - name: Update Dependencies & Generate lake-manifest.json
+      - name: Update Dependencies and Generate lake-manifest.json
         run: lake update
 
       - name: Fetch Mathlib Cache
@@ -26,12 +26,10 @@ jobs:
       - name: Build Proof (.olean)
         run: lake build
 
-      - name: Export Plaintext AST (方案 1: 跨平台纯文本证明文件)
+      - name: "Export Plaintext AST (Scheme 1)"
         run: |
-          # 克隆并构建纯文本导出器 lean4export
           git clone https://github.com/leanprover-community/lean4export.git
           cd lean4export && lake build && cd ..
-          # 导出低级 AST 语法树至纯文本文件
           lake env ./lean4export/.lake/build/bin/lean4export StrictFormalConjecture1 > proof_independent.out || true
 
       - name: Upload All Proof Artifacts
