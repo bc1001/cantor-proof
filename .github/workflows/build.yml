@@ -1,4 +1,4 @@
-name: Build Proof and Export Artifacts
+name: Build and Verify Proof with Comparator
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -23,25 +23,32 @@ jobs:
       - name: Fetch Mathlib Cache
         run: lake exe cache get
 
-      - name: Build Proof (.olean)
+      - name: Build Modules
         run: lake build
 
-      - name: "Export Plaintext AST (Scheme 1)"
+      - name: Run Formal Comparator Verification
         run: |
-          # 修正为官方正版仓库 leanprover/lean4export
-          git clone https://github.com/leanprover/lean4export.git
-          cd lean4export
-          # 保证导出器与你的 v4.35.0-rc4 工具链完全一致
-          cp ../lean-toolchain . || true
-          lake build
-          cd ..
-          lake env ./lean4export/.lake/build/bin/lean4export StrictFormalConjecture1 > proof_independent.out
+          # 动态加载两个独立的 .olean 环境，避免同名命名空间冲突，并在内存中核验 AST 等价性
+          lake env lean --run - << 'EOF'
+          import Lean
 
-      - name: Upload All Proof Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: proof-artifacts
-          path: |
-            lake-manifest.json
-            proof_independent.out
-            .lake/build/lib/
+          open Lean
+
+          def main : IO Unit := do
+            let envChallenge ← importModules #[{ module := `Conjecture1_Comparator }] {}
+            let envSolution ← importModules #[{ module := `StrictFormalConjecture1 }] {}
+            
+            let targetName := `StrictFormalConjecture1.Conjecture1
+            IO.println s!"=== Comparator AST Verification for {targetName} ==="
+            
+            match envChallenge.find? targetName, envSolution.find? targetName with
+            | some c1, some c2 =>
+              if c1.type == c2.type then
+                IO.println "✔ Comparator verified: Target theorem types are identical (0 drift)!"
+              else
+                throw <| IO.userError "Type mismatch: Solution changed the theorem statement!"
+            | none, _ =>
+              throw <| IO.userError s!"Challenge does not declare {targetName}!"
+            | _, none =>
+              throw <| IO.userError s!"Solution does not declare {targetName}!"
+          EOF
