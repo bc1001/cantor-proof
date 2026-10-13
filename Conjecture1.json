@@ -1,0 +1,13 @@
+{
+  "challenge_module": "Conjecture1_Comparator",
+  "solution_module": "StrictFormalConjecture1",
+  "challenge_theorems": [
+    "Conjecture1"
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "enable_nanoda": true
+}
