@@ -77,8 +77,8 @@
 
 ### 1. 克隆仓库
 ```bash
-git clone https://github.com/你的用户名/你的仓库名.git
-cd 你的仓库名
+git clone https://github.com/bc1001/cantor-proof.git
+cd cantor-proof
 ```
 
 ### 2. 获取预编译缓存并构建
