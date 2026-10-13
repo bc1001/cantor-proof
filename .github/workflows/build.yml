@@ -28,8 +28,8 @@ jobs:
 
       - name: Run Formal Comparator Verification
         run: |
-          # 动态加载两个独立的 .olean 环境，避免同名命名空间冲突，并在内存中核验 AST 等价性
-          lake env lean --run - << 'EOF'
+          # 1. 写入临时比对脚本
+          cat << 'EOF' > check_comparator.lean
           import Lean
 
           open Lean
@@ -52,3 +52,6 @@ jobs:
             | _, none =>
               throw <| IO.userError s!"Solution does not declare {targetName}!"
           EOF
+
+          # 2. 运行比对脚本
+          lake env lean --run check_comparator.lean
